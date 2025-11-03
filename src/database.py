@@ -298,5 +298,4 @@ def get_caller_info_in_tool_format(call_id: str) -> Optional[Dict[str, Any]]:
     }
 
 
-# Initialize database on module import
 init_database()

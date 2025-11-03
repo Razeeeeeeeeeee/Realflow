@@ -195,7 +195,6 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
         else None,
         "end_call_message": f"Thanks for calling {brokerage_name}. We'll be in touch soon. Have a great day!",
         "end_call_phrases": ["that's all", "goodbye", "thanks bye", "end call", "thanks for calling"],
-        "end_call_function_enabled": True,
         "client_messages": [
             "transcript",
             "hang",
@@ -264,13 +263,6 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
             json.dump(assistant_data, f, indent=2)
 
         print("\nConfiguration saved to: assistant_config.json")
-        print("\n" + "=" * 60)
-        print("Next Steps:")
-        print("1. Note your Assistant ID above")
-        print("2. Make sure your webhook server is running")
-        print("3. Buy a Vapi phone number and link it to this assistant")
-        print("4. Test the inbound call flow")
-        print("=" * 60)
 
         return assistant
 
