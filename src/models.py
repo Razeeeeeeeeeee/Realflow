@@ -8,9 +8,10 @@ class CallerInfo(BaseModel):
     caller_name: Optional[str] = None
     phone_number: Optional[str] = None
     email: Optional[str] = None
-    caller_role: Optional[str] = None
+    caller_role: Optional[str] = None  # owner, buyer, broker, lender, tenant, landlord, investor, other
     asset_type: Optional[str] = None
     location: Optional[str] = None
+    reason_for_calling: Optional[str] = None
     deal_size: Optional[str] = None
     urgency: Optional[str] = None
     additional_notes: Optional[str] = None

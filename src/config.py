@@ -16,6 +16,9 @@ LOG_LEVEL = "info"
 # Security
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "your-webhook-secret-key")
 
+# Google Sheets Webhook
+GOOGLE_SHEETS_WEBHOOK_URL = os.getenv("GOOGLE_SHEETS_WEBHOOK_URL", "")
+
 # Data Storage
 DATA_DIR = Path("conversation_data")
 DATA_DIR.mkdir(exist_ok=True)

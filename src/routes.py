@@ -14,7 +14,6 @@ from .handlers import (
     handle_transcript
 )
 
-# Create routers
 webhook_router = APIRouter()
 api_router = APIRouter()
 
@@ -50,22 +49,20 @@ async def handle_vapi_webhook(
     Main webhook endpoint for Vapi callbacks
     """
     try:
-        # Get raw body for signature verification
         body = await request.body()
         
-        # Verify signature in production
         if x_vapi_signature and not verify_webhook_signature(body, x_vapi_signature):
             raise HTTPException(status_code=401, detail="Invalid webhook signature")
         
-        # Parse JSON payload
         payload = json.loads(body)
         message_type = payload.get("message", {}).get("type")
         
         print(f"\n{'=' * 60}")
         print(f"Received webhook: {message_type}")
         print(f"{'=' * 60}")
+        print(f"Payload keys: {list(payload.keys())}")
+        print(f"Message keys: {list(payload.get('message', {}).keys())}")
         
-        # Handle different message types
         if message_type == "end-of-call-report":
             return await handle_end_of_call(payload)
         
@@ -102,7 +99,6 @@ async def list_calls(limit: int = 50):
         for line in f:
             calls.append(json.loads(line))
     
-    # Return most recent first
     calls = calls[-limit:][::-1]
     
     return {"calls": calls, "total": len(calls)}

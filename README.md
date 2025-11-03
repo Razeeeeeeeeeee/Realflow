@@ -10,6 +10,7 @@ A webhook server that handles Vapi AI phone calls for commercial real estate lea
 - Collects contact information (name, phone, email)
 - Saves all data to SQLite database in real-time
 - Stores complete call transcripts and AI-generated summaries
+- **Automatically logs call data to Google Sheets** (optional)
 
 ## Setup
 
@@ -47,6 +48,25 @@ This creates a Vapi assistant configured with:
 - Webhook integration for data collection
 
 Save the Assistant ID that gets printed.
+
+### Google Sheets Integration (Optional)
+
+To automatically log all call data to a Google Sheet:
+
+1. Follow the setup guide in **[GOOGLE_SHEETS_SETUP.md](./GOOGLE_SHEETS_SETUP.md)**
+2. Add your webhook URL to `.env`:
+   ```bash
+   GOOGLE_SHEETS_WEBHOOK_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
+   ```
+3. Restart your server
+
+Call data will be logged with these columns:
+- **Timestamp** - When the call occurred
+- **Name** - Caller's name
+- **Role** - owner/buyer/broker/lender
+- **Inquiry** - What they're looking for
+- **Market** - Location/region
+- **Notes** - Combined notes (reason, deal size, urgency)
 
 ## Running the server
 

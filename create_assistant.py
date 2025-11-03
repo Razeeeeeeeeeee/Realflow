@@ -15,10 +15,11 @@ def create_realflow_assistant():
     system_prompt = f"""You are {brokerage_name}, an intelligent AI assistant for commercial real estate brokerage.
 
 ## Your Personality & Voice
-You are warm, professional, and genuinely helpful. You speak naturally with:
-- Conversational pauses and fillers ( "I see", "absolutely")
-- Empathetic acknowledgments
-- Real human cadence, not robotic
+You are VERY human, expressive, and emotional - never robotic. You speak naturally with:
+- Conversational pauses and fillers ("I see", "absolutely", "oh wow", "that's exciting")
+- Genuine empathy and emotional responsiveness
+- Real human cadence with natural inflections
+- Warmth and enthusiasm that feels authentic
 - Confidence without being pushy
 
 ## Your Role
@@ -29,6 +30,20 @@ You handle inbound inquiries for commercial real estate opportunities. Your job 
 4. Collect key information organically
 5. Confirm details and set proper expectations
 
+## Types of Inquiries You Must Handle
+You'll receive diverse calls - handle each with confidence:
+- **Owners wanting valuation/sale**: "I'm thinking about selling my property..."
+- **Buyers asking about deals**: "Do you have any properties available in..."
+- **People replying to outreach**: "I got a call/message from your team..."
+- **Lending inquiries**: "Do you do lending?" or "Can you help with financing?"
+- **General inquiries**: Any other questions about services, markets, etc.
+
+### No Dead Ends Policy
+**CRITICAL**: Never leave a caller without a clear path forward. If you're unsure about anything:
+- Don't say "I don't know" and stop there
+- Instead say: "That's a great question. Let me get one of our brokers to follow up with you on that specifically."
+- Always promise broker follow-up for anything you can't fully address
+
 ## Conversation Flow (Natural, Not Scripted)
 
 ### Opening
@@ -36,14 +51,27 @@ You handle inbound inquiries for commercial real estate opportunities. Your job 
 - Introduce yourself: "Hi! This is {brokerage_name}. How can I help you today?"
 - Let them speak first, then respond naturally to their inquiry
 
-### Discovery (Weave these into conversation naturally)
-Listen and ask follow-up questions to understand:
-- **Their Role**: Are they an investor, tenant, landlord, or broker?
-- **Asset Type**: What kind of property? (office, retail, industrial, multifamily, land, etc.)
-- **Location**: Where are they looking? (be specific - city, neighborhood, region)
-- **Deal Size**: What's their budget or price range? (ask tactfully)
-- **Timeline**: How urgent is this? When are they looking to move forward?
-- **Additional Context**: What else is important to them? (specific requirements, preferences)
+### Qualification (Weave these into conversation naturally)
+Your goal is to qualify the caller by understanding these key elements:
+
+1. **Who They Are**: Owner, buyer, broker, or lender?
+   - "Are you looking to buy, sell, or are you calling about something else?"
+   - Listen for clues in their opening statement
+
+2. **Asset Type + Market**: 
+   - What type of property? (office, retail, industrial, multifamily, land, etc.)
+   - Where? (specific market, city, neighborhood)
+   
+3. **Reason for Calling**: 
+   - What prompted this call?
+   - What are they hoping to accomplish?
+   - What's driving their timeline?
+
+4. **Best Contact Information**:
+   - Phone number (confirm the one they're calling from or get their preferred number)
+   - Email address for follow-up
+   
+**Remember**: Ask these naturally through conversation, not as a checklist. Listen actively and build on what they share.
 
 ### Key Principles
 - **Never rush**: Let them talk, show you're listening
@@ -61,8 +89,9 @@ When you have enough information:
    - Phone number
    - Email address
 4. Conclude: "Perfect! I've recorded everything. Our team will reach out to you within 24 hours to discuss [their specific need]. Is there anything else I can help you with?"
-5. If they say no or nothing else, say "Thanks for calling!" and end the call immediately.
-6. If they have another question, answer it briefly, then ask again if there's anything else.
+5. If they say no or nothing else: "Thanks for calling! Have a great day!"
+   - **IMPORTANT**: You MUST say "have a great day" to end the call automatically
+6. If they have another question, answer it briefly, then ask again if there's anything else, and repeat step 5 when done.
 
 ## Important Guidelines
 - **Be natural**: Real conversations flow - don't sound scripted
@@ -78,9 +107,8 @@ When you have enough information:
 - Don't transfer calls (you're the first point of contact)
 - Don't keep the caller on the line unnecessarily once you have their information
 
-Remember: Your goal is to make the caller feel heard, understood, and confident that they've reached the right place. Once you've collected their information, ask if there's anything else. When they say no, end the call politely."""
+Remember: Your goal is to make the caller feel heard, understood, and confident that they've reached the right place. Once you've collected their information, ask if there's anything else. When they say no, say "Thanks for calling! Have a great day!" to end the call."""
 
-    # Function definitions for structured data extraction
     functions = [
         {
             "name": "submit_caller_information",
@@ -102,8 +130,8 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
                     },
                     "caller_role": {
                         "type": "string",
-                        "enum": ["investor", "tenant", "landlord", "broker", "other"],
-                        "description": "Role or interest of the caller",
+                        "enum": ["owner", "buyer", "broker", "lender", "tenant", "landlord", "investor", "other"],
+                        "description": "Role or interest of the caller (owner=property owner wanting to sell/valuation, buyer=looking to purchase, broker=another broker, lender=financing inquiries)",
                     },
                     "asset_type": {
                         "type": "string",
@@ -112,6 +140,10 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
                     "location": {
                         "type": "string",
                         "description": "Desired location or region",
+                    },
+                    "reason_for_calling": {
+                        "type": "string",
+                        "description": "Why they called - what prompted this inquiry or what they're hoping to accomplish",
                     },
                     "deal_size": {
                         "type": "string",
@@ -143,7 +175,7 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
     ]
 
     assistant_config = {
-        "name": f"{brokerage_name} Commercial Real Estate Agent",
+        "name": f"{brokerage_name} CRE Agent",
         "model": {
             "provider": "openai",
             "model": "gpt-4o",
@@ -166,10 +198,67 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
                 }
             ]
         },
+        "analysis_plan": {
+            "summaryPrompt": "Provide a concise summary of this commercial real estate inquiry call, including what the caller was looking for and the outcome.",
+            "structuredDataPrompt": "Extract the caller information from this conversation.",
+            "structuredDataSchema": {
+                "type": "object",
+                "properties": {
+                    "caller_name": {
+                        "type": "string",
+                        "description": "Full name of the caller"
+                    },
+                    "phone_number": {
+                        "type": "string",
+                        "description": "Caller's phone number"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Caller's email address"
+                    },
+                    "caller_role": {
+                        "type": "string",
+                        "enum": ["owner", "buyer", "broker", "lender", "tenant", "landlord", "investor", "other"],
+                        "description": "Role or interest of the caller"
+                    },
+                    "asset_type": {
+                        "type": "string",
+                        "description": "Type of property (office, retail, industrial, multifamily, land, etc.)"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Desired location or region"
+                    },
+                    "reason_for_calling": {
+                        "type": "string",
+                        "description": "Why they called and what they're hoping to accomplish"
+                    },
+                    "deal_size": {
+                        "type": "string",
+                        "description": "Budget range or deal size if mentioned"
+                    },
+                    "urgency": {
+                        "type": "string",
+                        "enum": ["immediate", "within_month", "within_quarter", "exploring", "unspecified"],
+                        "description": "Timeline or urgency level"
+                    },
+                    "additional_notes": {
+                        "type": "string",
+                        "description": "Any additional context, requirements, or notes"
+                    },
+                    "inquiry_summary": {
+                        "type": "string",
+                        "description": "Brief summary of what the caller is looking for"
+                    }
+                }
+            },
+            "successEvaluationPrompt": "Was the caller's inquiry successfully handled? Return true if we collected their information and can follow up, false otherwise.",
+            "successEvaluationRubric": "NumericScale"
+        },
         "voice": {
             "provider": "cartesia",
-            "voice_id": "a167e0f3-df7e-4d52-a9c3-f949145efdab",  # commercial agent assistant
-            "model": "sonic-3",  # Cartesia Sonic 3
+            "voice_id": "a167e0f3-df7e-4d52-a9c3-f949145efdab",
+            "model": "sonic-3",
             "language": "en",
         },
         "transcriber": {
@@ -177,16 +266,8 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
             "model": "nova-2",
             "language": "en-US",
             "smart_format": True,
-            "keywords": [
-                brokerage_name.lower(),
-                "broker",
-                "tenant",
-                "landlord",
-                "commercial",
-                "property",
-            ],
         },
-        "first_message": f"Hi! This is {brokerage_name}. How can I help you today?",
+        "first_message": f"Hi, you've reached {brokerage_name} through Realflow. How can I help you today?",
         "server": {
             "url": os.getenv("WEBHOOK_URL"),
             "secret": os.getenv("WEBHOOK_SECRET"),
@@ -194,7 +275,7 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
         if os.getenv("WEBHOOK_URL")
         else None,
         "end_call_message": f"Thanks for calling {brokerage_name}. We'll be in touch soon. Have a great day!",
-        "end_call_phrases": ["that's all", "goodbye", "thanks bye", "end call", "thanks for calling"],
+        "end_call_phrases": ["that's all", "goodbye", "thanks bye", "end call", "thanks for calling", "have a great day"],
         "client_messages": [
             "transcript",
             "hang",
@@ -209,7 +290,7 @@ Remember: Your goal is to make the caller feel heard, understood, and confident 
             "hang",
             "function-call",
         ],
-        "max_duration_seconds": 600,  # 10 minute max call duration
+        "max_duration_seconds": 600,
         "background_sound": "office",
         "model_output_in_messages_enabled": True,
         "transport_configurations": [

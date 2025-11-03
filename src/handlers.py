@@ -2,8 +2,8 @@ import json
 from typing import Dict, Any
 
 from .models import CallerInfo, ConversationData, Message
-from .utils import save_conversation_data, format_caller_summary
-from .database import save_caller_info, save_call_data
+from .utils import save_conversation_data, format_caller_summary, send_to_google_sheets
+from .database import save_caller_info
 
 
 async def handle_end_of_call(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -66,12 +66,15 @@ async def handle_end_of_call(payload: Dict[str, Any]) -> Dict[str, Any]:
                 "ended_at": call_obj.get("endedAt"),
                 "end_reason": call_data.get("endedReason"),
                 "cost": call_data.get("cost"),
-                "analysis": analysis  # Store full analysis for reference
+                "analysis": analysis
             }
         )
         
         save_conversation_data(conversation, call_id)
-        save_call_data(conversation)
+        
+        if caller_info:
+            save_caller_info(caller_info, call_id, raw_message=None)
+            await send_to_google_sheets(caller_info, call_id)
         
         print("\n" + "CALL SUMMARY ".center(60, "="))
         print(f"\nCall ID: {call_id}")
@@ -115,7 +118,12 @@ async def handle_function_call(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     Process function calls when assistant collects caller info
     """
+    print("\n" + "FUNCTION CALL HANDLER ".center(60, "="))
+    
     message = payload.get("message", {})
+    
+    print(f"\nRaw payload keys: {list(payload.keys())}")
+    print(f"Message keys: {list(message.keys())}")
     
     function_call = message.get("functionCall") or message.get("toolCall")
     tool_call_list = message.get("toolCallList", [])
@@ -124,13 +132,14 @@ async def handle_function_call(payload: Dict[str, Any]) -> Dict[str, Any]:
     
     if not function_call:
         function_call = {}
+        print("WARNING: No function call found in message!")
+        print(f"Full message: {json.dumps(message, indent=2)}")
     
     tool_call_id = function_call.get("id")
     function_name = function_call.get("name") or function_call.get("function", {}).get("name")
     
     parameters = function_call.get("parameters") or function_call.get("function", {}).get("arguments", {})
     if isinstance(parameters, str):
-        # Sometimes arguments come as JSON string
         try:
             parameters = json.loads(parameters)
         except (json.JSONDecodeError, ValueError):
@@ -138,7 +147,6 @@ async def handle_function_call(payload: Dict[str, Any]) -> Dict[str, Any]:
     
     print(f"\nFunction called: {function_name}")
     print(f"Tool Call ID: {tool_call_id}")
-    print(f"Full message structure: {json.dumps(message, indent=2)}")
     print(f"Parameters: {json.dumps(parameters, indent=2)}")
     
     if function_name == "submit_caller_information":
@@ -154,8 +162,7 @@ async def handle_function_call(payload: Dict[str, Any]) -> Dict[str, Any]:
             print(f"Database ID: {db_id}")
             print("-" * 60)
             
-            # Hook this up to your CRM if needed
-            # send_to_crm(caller_info)
+            await send_to_google_sheets(caller_info, msg_call_id)
             
             result_message = "Thank you! I've recorded your information. Our team will reach out to you within 24 hours."
             

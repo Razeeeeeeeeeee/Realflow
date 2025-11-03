@@ -5,7 +5,6 @@ from typing import Optional, Dict, Any
 
 from .models import CallerInfo, ConversationData
 
-# Database file location
 DB_PATH = Path("conversation_data/calls.db")
 
 
@@ -16,7 +15,6 @@ def init_database():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Table for caller information (structured format)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS caller_information (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +29,6 @@ def init_database():
         )
     """)
     
-    # Table for complete call data
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS calls (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +60,6 @@ def save_caller_info(caller_info: CallerInfo, call_id: str = "unknown", raw_mess
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Extract tool call details from raw message if provided
     timestamp = None
     message_type = None
     tool_call_id = None
@@ -72,12 +68,10 @@ def save_caller_info(caller_info: CallerInfo, call_id: str = "unknown", raw_mess
         timestamp = raw_message.get("timestamp")
         message_type = raw_message.get("type")
         
-        # Extract tool call ID
         tool_calls = raw_message.get("toolCalls", [])
         if tool_calls and len(tool_calls) > 0:
             tool_call_id = tool_calls[0].get("id")
     
-    # Convert caller info to arguments JSON
     arguments_json = json.dumps(caller_info.dict(exclude_none=True))
     raw_payload_json = json.dumps(raw_message) if raw_message else None
     
@@ -109,11 +103,9 @@ def save_call_data(conversation: ConversationData) -> int:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Convert transcript to JSON string
     transcript_json = json.dumps([msg.dict() for msg in conversation.transcript])
     metadata_json = json.dumps(conversation.metadata)
     
-    # Insert or update call data
     cursor.execute("""
         INSERT OR REPLACE INTO calls (
             call_id, assistant_id, call_duration, call_status,
@@ -140,7 +132,6 @@ def save_call_data(conversation: ConversationData) -> int:
     
     row_id = cursor.lastrowid
     
-    # Also save caller info if available
     if conversation.caller_info:
         save_caller_info(conversation.caller_info, conversation.call_id)
     
@@ -169,7 +160,6 @@ def get_caller_info_by_call_id(call_id: str) -> Optional[Dict[str, Any]]:
     
     if row:
         data = dict(row)
-        # Parse JSON fields
         if data.get('arguments'):
             data['arguments'] = json.loads(data['arguments'])
         if data.get('raw_payload'):
@@ -191,7 +181,6 @@ def get_call_by_id(call_id: str) -> Optional[Dict[str, Any]]:
     
     if row:
         data = dict(row)
-        # Parse JSON fields
         if data.get('transcript'):
             data['transcript'] = json.loads(data['transcript'])
         if data.get('metadata'):
@@ -232,19 +221,15 @@ def get_stats() -> Dict[str, Any]:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Total calls
     cursor.execute("SELECT COUNT(*) FROM calls")
     total_calls = cursor.fetchone()[0]
     
-    # Total caller info submissions
     cursor.execute("SELECT COUNT(*) FROM caller_information")
     total_submissions = cursor.fetchone()[0]
     
-    # Average call duration
     cursor.execute("SELECT AVG(call_duration) FROM calls WHERE call_duration IS NOT NULL")
     avg_duration = cursor.fetchone()[0] or 0
     
-    # Calls by role (parse from JSON arguments)
     cursor.execute("SELECT arguments FROM caller_information WHERE arguments IS NOT NULL")
     roles = {}
     asset_types = {}
@@ -281,7 +266,6 @@ def get_caller_info_in_tool_format(call_id: str) -> Optional[Dict[str, Any]]:
     if not data:
         return None
     
-    # Reconstruct in tool-calls format
     return {
         "timestamp": data.get("timestamp"),
         "type": data.get("type"),
@@ -291,7 +275,7 @@ def get_caller_info_in_tool_format(call_id: str) -> Optional[Dict[str, Any]]:
                 "type": "function",
                 "function": {
                     "name": data.get("function_name"),
-                    "arguments": data.get("arguments")  # Already parsed as dict
+                    "arguments": data.get("arguments")
                 }
             }
         ]
