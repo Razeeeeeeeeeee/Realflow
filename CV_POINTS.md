@@ -47,7 +47,7 @@ Developed an enterprise-grade AI voice agent system for commercial real estate l
 
 ### DevOps & Deployment
 - Configured **Uvicorn** ASGI server with hot-reload for development
-- Set up dependency management using modern Python tooling (uv, requirements.txt, pyproject.toml)
+- Set up dependency management using modern Python tooling (uv package installer, requirements.txt, pyproject.toml)
 - Implemented ngrok integration for local webhook testing and development
 - Created deployment-ready configuration with customizable host, port, and log levels
 - Built initialization scripts for automated assistant creation and configuration
